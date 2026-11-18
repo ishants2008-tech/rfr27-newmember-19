@@ -12,36 +12,27 @@ const int PIN_C   = 4;           // multiplexer pin C
 const int PIN_LED = 6;           // LED pin
 const int PIN_SENSOR = A0;       // multiplexer input
 
-const int NUM_SENSORS = 8;
-
-const float SUPPLY_VOLTS = 5.00;
-
-const float FAULT_TEMP = 60.0;   // threshold temp for LED
-
 
 // sensor data table implementation
-
-const int TABLE_SIZE = 33;
-
-const float tableTemp[TABLE_SIZE] =
+const float tableTemp[33] =
 {
   -40, -35, -30, -25, -20, -15, -10,  -5, 0,   5,  10,  15,  20,  25,  30,  35, 40,  45,  50,  55,  60,  65,  70,  75, 80,  85,  90,  95, 100, 105, 110, 115, 120
 };
 
-const float tableVolts[TABLE_SIZE] =
+const float tableVolts[33] =
 {
   2.44, 2.42, 2.40, 2.38, 2.35, 2.32, 2.27, 2.23, 2.17, 2.11, 2.05, 1.99, 1.92, 1.86, 1.80, 1.74, 1.68, 1.63, 1.59, 1.55, 1.51, 1.48, 1.45, 1.43, 1.40, 1.38, 1.37, 1.35, 1.34, 1.33, 1.32, 1.31, 1.30
 };
 
 
 // max, min, and avg temp variables
-float temps[NUM_SENSORS];        // temperature data from sensors
+float temps[8];        // temperature data from sensors
 float maxTemp = 0;
 float minTemp = 0;
 float avgTemp = 0;
 
 // max, min, average, and sensors 0-7 are sent through I2C
-int i2cData[3 + NUM_SENSORS];
+int i2cData[3 + 8];
 
 // vars used for turning LED on/off for a certain amount of time
 bool ledOn = false;
@@ -68,7 +59,7 @@ float readVolts()
     total = total + analogRead(PIN_SENSOR);
   }
   float average = total / 4.0;
-  return average * SUPPLY_VOLTS / 1024.0;     // converts to volts to use data table
+  return average * 5.00 / 1024.0;     // converts to volts to use data table
 }
 
 // converts voltage from previous step into temperature
@@ -79,13 +70,13 @@ float voltsToTemp(float volts)
   {
     return tableTemp[0];
   }
-  if(volts <= tableVolts[TABLE_SIZE - 1])
+  if(volts <= tableVolts[33 - 1])
   {
-    return tableTemp[TABLE_SIZE - 1];
+    return tableTemp[33 - 1];
   }
 
   // goes through table to find two points the voltage is in between
-  for(int i = 0; i < TABLE_SIZE - 1; i++)
+  for(int i = 0; i < 33 - 1; i++)
   {
     float vHigh = tableVolts[i];
     float vLow  = tableVolts[i + 1];
@@ -102,7 +93,7 @@ float voltsToTemp(float volts)
   //sending data through I2C
 void sendI2CData()
 {
-  for(int i = 0; i < 3 + NUM_SENSORS; i++)
+  for(int i = 0; i < 3 + 8; i++)
   {
     Wire.write(lowByte(i2cData[i]));
     Wire.write(highByte(i2cData[i]));
@@ -129,7 +120,7 @@ void loop()
 {
 
   // loops through all sensors
-  for(int ch = 0; ch < NUM_SENSORS; ch++)
+  for(int ch = 0; ch < 8; ch++)
   {
     selectChannel(ch);
     delayMicroseconds(200);       // slight delay bc of the small capacitor (first reading may be off)
@@ -141,7 +132,7 @@ void loop()
   maxTemp = temps[0];
   minTemp = temps[0];
   float sum = 0;
-  for(int ch = 0; ch < NUM_SENSORS; ch++)
+  for(int ch = 0; ch < 8; ch++)
   {
     if(temps[ch] > maxTemp)
     {
@@ -153,7 +144,7 @@ void loop()
     }
     sum = sum + temps[ch];
   }
-  avgTemp = sum / NUM_SENSORS;
+  avgTemp = sum / 8;
 
   // updating numbers for I2C
   noInterrupts();
@@ -161,7 +152,7 @@ void loop()
   i2cData[0] = round(maxTemp * 100);
   i2cData[1] = round(minTemp * 100);
   i2cData[2] = round(avgTemp * 100);
-  for(int ch = 0; ch < NUM_SENSORS; ch++)
+  for(int ch = 0; ch < 8; ch++)
   {
     i2cData[3 + ch] = round(temps[ch] * 100);
   }
@@ -169,7 +160,7 @@ void loop()
 
 
   // blinks LED while the temp from any sensor is above 60C
-  if(maxTemp > FAULT_TEMP)
+  if(maxTemp > 60.0)
   {
     if(millis() - lastBlinkTime >= 250)
     {
@@ -192,7 +183,7 @@ void loop()
     Serial.print("  Min: "); Serial.print(minTemp);
     Serial.print("  Avg: "); Serial.print(avgTemp);
     Serial.print("  |");
-    for(int ch = 0; ch < NUM_SENSORS; ch++)
+    for(int ch = 0; ch < 8; ch++)
     {
       Serial.print("  T"); Serial.print(ch); Serial.print("=");
       Serial.print(temps[ch]);

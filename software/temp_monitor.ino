@@ -63,7 +63,7 @@ void selectChannel(int channel)
 float readVolts()
 {
   long total = 0;
-  for (int i = 0; i < 4; i++)
+  for(int i = 0; i < 4; i++)
   {
     total = total + analogRead(PIN_SENSOR);
   }
@@ -75,16 +75,22 @@ float readVolts()
 float voltsToTemp(float volts)
 {
   // handling extreme cases
-  if (volts >= tableVolts[0]) return tableTemp[0];
-  if (volts <= tableVolts[TABLE_SIZE - 1]) return tableTemp[TABLE_SIZE - 1];
+  if(volts >= tableVolts[0])
+  {
+    return tableTemp[0];
+  }
+  if(volts <= tableVolts[TABLE_SIZE - 1])
+  {
+    return tableTemp[TABLE_SIZE - 1];
+  }
 
   // goes through table to find two points the voltage is in between
-  for (int i = 0; i < TABLE_SIZE - 1; i++)
+  for(int i = 0; i < TABLE_SIZE - 1; i++)
   {
     float vHigh = tableVolts[i];
     float vLow  = tableVolts[i + 1];
   // linear interpolation to estimate temp
-    if (volts <= vHigh && volts >= vLow)
+    if(volts <= vHigh && volts >= vLow)
     {
       float fraction = (vHigh - volts) / (vHigh - vLow);
       return tableTemp[i] + fraction * (tableTemp[i + 1] - tableTemp[i]);
@@ -96,7 +102,7 @@ float voltsToTemp(float volts)
   //sending data through I2C
 void sendI2CData()
 {
-  for (int i = 0; i < 3 + NUM_SENSORS; i++)
+  for(int i = 0; i < 3 + NUM_SENSORS; i++)
   {
     Wire.write(lowByte(i2cData[i]));
     Wire.write(highByte(i2cData[i]));
@@ -123,7 +129,7 @@ void loop()
 {
 
   // loops through all sensors
-  for (int ch = 0; ch < NUM_SENSORS; ch++)
+  for(int ch = 0; ch < NUM_SENSORS; ch++)
   {
     selectChannel(ch);
     delayMicroseconds(200);       // slight delay bc of the small capacitor (first reading may be off)
@@ -135,10 +141,16 @@ void loop()
   maxTemp = temps[0];
   minTemp = temps[0];
   float sum = 0;
-  for (int ch = 0; ch < NUM_SENSORS; ch++)
+  for(int ch = 0; ch < NUM_SENSORS; ch++)
   {
-    if (temps[ch] > maxTemp) maxTemp = temps[ch];
-    if (temps[ch] < minTemp) minTemp = temps[ch];
+    if(temps[ch] > maxTemp)
+    {
+      maxTemp = temps[ch];
+    }
+    if(temps[ch] < minTemp)
+    {
+      minTemp = temps[ch];
+    }
     sum = sum + temps[ch];
   }
   avgTemp = sum / NUM_SENSORS;
@@ -149,7 +161,7 @@ void loop()
   i2cData[0] = round(maxTemp * 100);
   i2cData[1] = round(minTemp * 100);
   i2cData[2] = round(avgTemp * 100);
-  for (int ch = 0; ch < NUM_SENSORS; ch++)
+  for(int ch = 0; ch < NUM_SENSORS; ch++)
   {
     i2cData[3 + ch] = round(temps[ch] * 100);
   }
@@ -157,9 +169,9 @@ void loop()
 
 
   // blinks LED while the temp from any sensor is above 60C
-  if (maxTemp > FAULT_TEMP)
+  if(maxTemp > FAULT_TEMP)
   {
-    if (millis() - lastBlinkTime >= 250)
+    if(millis() - lastBlinkTime >= 250)
     {
       lastBlinkTime = millis();
       ledOn = !ledOn;
@@ -173,14 +185,14 @@ void loop()
   }
 
   // printing to serial monitor for testing purposes
-  if (millis() - lastPrintTime >= 500)
+  if(millis() - lastPrintTime >= 500)
   {
     lastPrintTime = millis();
     Serial.print("Max: ");   Serial.print(maxTemp);
     Serial.print("  Min: "); Serial.print(minTemp);
     Serial.print("  Avg: "); Serial.print(avgTemp);
     Serial.print("  |");
-    for (int ch = 0; ch < NUM_SENSORS; ch++)
+    for(int ch = 0; ch < NUM_SENSORS; ch++)
     {
       Serial.print("  T"); Serial.print(ch); Serial.print("=");
       Serial.print(temps[ch]);
